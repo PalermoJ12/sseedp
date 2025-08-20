@@ -20,7 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
-
+    console.log(auth);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Profile settings" />
@@ -65,6 +65,69 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                         defaultValue={auth.user.email}
                                         name="email"
                                         required
+                                        autoComplete="username"
+                                        placeholder="Email address"
+                                    />
+
+                                    <InputError className="mt-2" message={errors.email} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="school">School ID:</Label>
+
+                                    <Input
+                                        id="school"
+                                        type="school"
+                                        className="mt-1 block w-full"
+                                        defaultValue={auth.user.school_id}
+                                        name="school"
+                                        disabled
+                                        autoComplete=""
+                                        placeholder=""
+                                    />
+
+
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="school_name">School Name</Label>
+                                    <Input
+                                        id="school_name"
+                                        className="mt-1 block w-full"
+                                        defaultValue={auth.user.school_name}
+                                        disabled
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="division">Division</Label>
+                                    <Input
+                                        id="division"
+                                        className="mt-1 block w-full"
+                                        defaultValue={auth.user.division}
+                                        disabled
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="region">Region</Label>
+                                    <Input
+                                        id="region"
+                                        className="mt-1 block w-full"
+                                        defaultValue={auth.user.region}
+                                        disabled
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">Role</Label>
+
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        className="mt-1 block w-full"
+                                        defaultValue={auth.user.role == "1" ? "Admin" : "User"}
+                                        name="email"
+                                        disabled
                                         autoComplete="username"
                                         placeholder="Email address"
                                     />

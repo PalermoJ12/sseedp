@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\School;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,14 +33,23 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'school_id' => ['required', 'string', 'exists:schools,school_id'],
         ]);
+
+        // Fetch the school record
+        $school = School::where('school_id', $request->school_id)->firstOrFail();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'school_id' => $school->school_id,
+            'region' => $school->region,
+            'division' => $school->division,
+            'school_name' => $school->school_name,
+            'role' => 0, 
         ]);
 
         event(new Registered($user));

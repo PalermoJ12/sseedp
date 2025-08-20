@@ -10,14 +10,28 @@ use Inertia\Inertia;
 
 class SportItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $sports = Sport::all();
-        $items = SportItem::with('sport')->paginate(8);
+
+        $query = SportItem::with('sport');
+
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('item_name', 'like', "%{$search}%")
+                    ->orWhereHas('sport', function ($q2) use ($search) {
+                        $q2->where('sport_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $items = $query->paginate(8)->withQueryString();
 
         return Inertia::render('items', [
             'items' => $items,
             'sports' => $sports,
+            'filters' => $request->only('search'),
         ]);
     }
 

@@ -5,7 +5,6 @@ import {
     TableHead,
     TableRow,
     TableCell,
-    TableCaption,
 } from "@/components/ui/table";
 import {
     DropdownMenu,
@@ -19,9 +18,9 @@ import Modal from "@/components/ui/modal";
 
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { router, Head, usePage, Link } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash, Plus } from "lucide-react"
+import { Pencil, Trash, Plus, Search } from "lucide-react"
 import { useState, useEffect } from 'react';
 import { Toast } from "@/components/ui/toast";
 
@@ -44,6 +43,7 @@ type Paginated<T> = {
 type PageProps = {
     items: Paginated<SportItem>;
     sports: Sport[];
+    filters?: { search?: string };
     flash?: { success?: string }
 };
 
@@ -54,23 +54,19 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-
-
 export default function Items() {
-
-    const { items, sports, flash } = usePage<PageProps>().props;
-    console.log('Available sports:', sports);
+    const { items, sports, flash, filters } = usePage<PageProps>().props;
 
     const [modalOpen, setModalOpen] = useState(false);
     const [modalType, setModalType] = useState<'create' | 'update' | 'delete' | null>(null);
     const [selectedItem, setSelectedItem] = useState<SportItem | null>(null);
     const [selectedSportId, setSelectedSportId] = useState<number | null>(null);
     const [itemName, setItemName] = useState('');
+    const [search, setSearch] = useState(filters?.search || "");
     const [toastOpen, setToastOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState<"success" | "error" | "info">("success");
     const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
-
 
     useEffect(() => {
         if (flash?.success) {
@@ -79,6 +75,11 @@ export default function Items() {
             setToastOpen(true);
         }
     }, [flash]);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(route("items.index"), { search }, { preserveState: true, replace: true });
+    };
 
     const openCreateModal = () => {
         setSelectedItem(null);
@@ -96,7 +97,6 @@ export default function Items() {
         setModalOpen(true);
     };
 
-
     const openDeleteModal = (item: SportItem) => {
         setSelectedItem(item);
         setModalType('delete');
@@ -110,12 +110,12 @@ export default function Items() {
             route('items.store'),
             { item_name: itemName, sport_id: selectedSportId, page: currentPage },
             {
-                preserveState: true, // stay on the current page
+                preserveState: true,
                 onSuccess: () => {
                     setToastMessage("Item created successfully!");
                     setToastType("success");
                     setToastOpen(true);
-                    router.reload({ only: ["items"] }); // refresh table data
+                    router.reload({ only: ["items"] });
                 },
                 onError: () => {
                     setToastMessage("Failed to create item.");
@@ -155,7 +155,6 @@ export default function Items() {
         setSelectedItem(null);
     };
 
-
     const handleDelete = () => {
         if (!selectedItem) return;
 
@@ -178,15 +177,29 @@ export default function Items() {
         setSelectedItem(null);
     };
 
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex justify-end items-center m-4 ">
-                <Button onClick={openCreateModal} className="hover:cursor-pointer"><Plus className="h-4 w-4 " /></Button>
+            <div className="flex justify-between items-center m-4">
+                <form onSubmit={handleSearch} className="flex gap-2">
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search items or sports..."
+                        className="w-64 rounded border px-3 py-2"
+                    />
+                    <Button type="submit" variant="outline">
+                        <Search className="h-4 w-4" />
+                    </Button>
+                </form>
+
+                <Button onClick={openCreateModal} className="hover:cursor-pointer">
+                    <Plus className="h-4 w-4" />
+                </Button>
             </div>
+
             <div className="flex h-screen flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <Table>
-
                     <TableHeader>
                         <TableRow>
                             <TableHead>ID</TableHead>
@@ -223,6 +236,7 @@ export default function Items() {
                         ))}
                     </TableBody>
                 </Table>
+
                 <Pagination links={items.links} />
 
                 <Modal
@@ -249,12 +263,10 @@ export default function Items() {
                                 ? 'Update'
                                 : 'Delete'
                     }
-
                     variant={modalType === 'delete' ? 'destructive' : 'default'}
                 >
                     {modalType !== 'delete' ? (
                         <div className="flex flex-col gap-2">
-                            {/* Item Name Input */}
                             <input
                                 type="text"
                                 value={itemName}
@@ -263,7 +275,6 @@ export default function Items() {
                                 placeholder="Enter item name"
                             />
 
-                            {/* Sport Selection Dropdown */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="w-full text-left hover:cursor-pointer">
@@ -290,9 +301,7 @@ export default function Items() {
                             Are you sure you want to delete <strong>{selectedItem?.item_name}</strong>?
                         </p>
                     )}
-
                 </Modal>
-
 
                 <Toast
                     open={toastOpen}
@@ -300,7 +309,6 @@ export default function Items() {
                     type={toastType}
                     onOpenChange={setToastOpen}
                 />
-
             </div>
         </AppLayout>
     );

@@ -35,6 +35,11 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    role: string;
+    school_id: string;
+    school_name: string;
+    region: string;
+    division: string;
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;

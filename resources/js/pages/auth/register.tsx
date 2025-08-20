@@ -50,7 +50,19 @@ export default function Register() {
                                 />
                                 <InputError message={errors.email} />
                             </div>
-
+                            <div className="grid gap-2">
+                                <Label htmlFor="school_id">School ID</Label>
+                                <Input
+                                    id="school_id"
+                                    type="number"
+                                    required
+                                    tabIndex={3}
+                                    autoComplete="off"
+                                    name="school_id"
+                                    placeholder="Enter your School ID"
+                                />
+                                <InputError message={errors.school_id} />
+                            </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
                                 <Input
