@@ -8,14 +8,15 @@ import { Head } from '@inertiajs/react';
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Schools', href: '/schools' },
+    { title: 'Reports', href: '/reports' },
 ];
 
 export default function Reports() {
-    const { report, filters, analytics } = usePage().props as any;
+    const { report, filters, analytics, allSports, allRegions } = usePage().props as any;
     const [region, setRegion] = useState(filters.region || "");
     const [division, setDivision] = useState(filters.division || "");
-    const [activeTab, setActiveTab] = useState('detailed'); // 'detailed' or 'summary'
+    const [sport, setSport] = useState(filters.sport || "");
+    const [activeTab, setActiveTab] = useState('detailed');
     const [expandedSchools, setExpandedSchools] = useState<{ [key: string]: boolean }>({});
 
     // Calculate overall statistics
@@ -52,35 +53,60 @@ export default function Reports() {
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
 
-        // Create Summary Sheet
+        // Create Sheets
         const summarySheet = workbook.addWorksheet("Regional Summary");
         const detailSheet = workbook.addWorksheet("Detailed Report");
+        const sportSheet = workbook.addWorksheet("Sport Items by Region");
 
-        // Styling helpers
+        // Enhanced styling
         const titleStyle = {
-            font: { bold: true, size: 14 },
-            alignment: { horizontal: "center" as const },
-            fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFE6F3FF' } }
-        };
-        const headerStyle = {
-            font: { bold: true },
-            alignment: { horizontal: "center" as const },
-            fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF0F0F0' } }
+            font: { bold: true, size: 16, color: { argb: 'FFFFFF' } },
+            alignment: { horizontal: "center" as const, vertical: "middle" as const },
+            fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF4472C4' } },
+            border: {
+                top: { style: 'thin' as const },
+                left: { style: 'thin' as const },
+                bottom: { style: 'thin' as const },
+                right: { style: 'thin' as const }
+            }
         };
 
+        const headerStyle = {
+            font: { bold: true, size: 12 },
+            alignment: { horizontal: "center" as const, vertical: "middle" as const },
+            fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFE2EFDA' } },
+            border: {
+                top: { style: 'thin' as const },
+                left: { style: 'thin' as const },
+                bottom: { style: 'thin' as const },
+                right: { style: 'thin' as const }
+            }
+        };
+
+        const dataStyle = {
+            alignment: { horizontal: "center" as const, vertical: "middle" as const },
+            border: {
+                top: { style: 'thin' as const },
+                left: { style: 'thin' as const },
+                bottom: { style: 'thin' as const },
+                right: { style: 'thin' as const }
+            }
+        };
+
+        // ========================
         // Summary Sheet
+        // ========================
         summarySheet.columns = [
             { header: "Region/Division", key: "name", width: 30 },
-            { header: "Total Schools", key: "total", width: 15 },
-            { header: "Submitted", key: "submitted", width: 15 },
-            { header: "Pending", key: "pending", width: 15 },
+            { header: "Total Schools", key: "total", width: 15, style: { numFmt: '#,##0' } },
+            { header: "Submitted", key: "submitted", width: 15, style: { numFmt: '#,##0' } },
+            { header: "Pending", key: "pending", width: 15, style: { numFmt: '#,##0' } },
             { header: "Completion %", key: "completion", width: 15 },
-            { header: "Total Quantity", key: "quantity", width: 15 },
-            { header: "Total PSF", key: "psf", width: 18 },
-            { header: "Total Disbursed", key: "disbursed", width: 20 },
+            { header: "Total Quantity", key: "quantity", width: 15, style: { numFmt: '#,##0' } },
+            { header: "Total PSF", key: "psf", width: 18, style: { numFmt: '#,##0.00' } },
+            { header: "Total Disbursed", key: "disbursed", width: 20, style: { numFmt: '#,##0.00' } },
         ];
 
-        // Add overall summary
         const overallRow = summarySheet.addRow({
             name: "OVERALL SUMMARY",
             total: overallStats.totalSchools,
@@ -92,15 +118,10 @@ export default function Reports() {
             disbursed: overallStats.totalDisbursed
         });
         overallRow.eachCell((cell) => Object.assign(cell, titleStyle));
-        summarySheet.addRow([]); // Blank row
+        summarySheet.addRow([]);
 
         Object.entries(report).forEach(([region, divisions]: any) => {
-            // Calculate region totals
-            let regionSchools = 0;
-            let regionSubmitted = 0;
-            let regionQuantity = 0;
-            let regionPsf = 0;
-            let regionDisbursed = 0;
+            let regionSchools = 0, regionSubmitted = 0, regionQuantity = 0, regionPsf = 0, regionDisbursed = 0;
 
             Object.values(divisions).forEach((data: any) => {
                 regionSchools += data.school_count;
@@ -112,7 +133,6 @@ export default function Reports() {
 
             const regionCompletion = regionSchools > 0 ? ((regionSubmitted / regionSchools) * 100).toFixed(1) : '0';
 
-            // Add region summary
             const regionRow = summarySheet.addRow({
                 name: region,
                 total: regionSchools,
@@ -125,10 +145,9 @@ export default function Reports() {
             });
             regionRow.eachCell((cell) => Object.assign(cell, headerStyle));
 
-            // Add division details
             Object.entries(divisions).forEach(([division, data]: any) => {
                 const divisionCompletion = data.school_count > 0 ? ((data.submitted_schools / data.school_count) * 100).toFixed(1) : '0';
-                summarySheet.addRow({
+                const divRow = summarySheet.addRow({
                     name: `  → ${division}`,
                     total: data.school_count,
                     submitted: data.submitted_schools,
@@ -138,10 +157,13 @@ export default function Reports() {
                     psf: data.total_psf,
                     disbursed: data.total_disbursed
                 });
+                divRow.eachCell((cell) => Object.assign(cell, dataStyle));
             });
         });
 
-        // Detailed Sheet (existing logic)
+        // ========================
+        // Detailed Report
+        // ========================
         detailSheet.columns = [
             { header: "Region", key: "region", width: 20 },
             { header: "Division", key: "division", width: 25 },
@@ -153,26 +175,229 @@ export default function Reports() {
             { header: "Disbursed", key: "disbursed", width: 20 },
         ];
 
+        // Apply header style to detailed sheet
+        detailSheet.getRow(1).eachCell((cell) => Object.assign(cell, headerStyle));
+
         Object.entries(report).forEach(([region, divisions]: any) => {
             Object.entries(divisions).forEach(([division, data]: any) => {
                 data.schools.forEach((s: any) => {
-                    const hasSubmission = s.quantity > 0 || s.psf > 0 || s.disbursed > 0;
-                    detailSheet.addRow({
+                    const row = detailSheet.addRow({
                         region: region,
                         division: division,
                         school_id: s.school_id,
                         school: s.school_name,
-                        status: hasSubmission ? 'Submitted' : 'Pending',
+                        status: s.submitted ? 'Submitted' : 'Pending',
                         quantity: s.quantity,
                         psf: s.psf,
                         disbursed: s.disbursed,
                     });
+                    row.eachCell((cell) => Object.assign(cell, dataStyle));
                 });
             });
         });
 
+        // ========================
+        // ✅ UPDATED: Sport Items by Region Sheet (Filtered Based on Sport Selection)
+        // ========================
+
+        // ✅ Use regions from the filtered report data (only regions with sport inventory)
+        const regionsList = Object.keys(report).sort();
+
+        // ✅ Initialize sport item data structure based on filter
+        const sportItemData: Record<string, Record<string, number>> = {};
+        const allSportItemsList: string[] = [];
+
+        // ✅ If sport filter is applied, only include items from that sport
+        if (filters.sport) {
+            // Get items from the filtered report data
+            Object.entries(report).forEach(([region, divisions]: any) => {
+                Object.values(divisions).forEach((data: any) => {
+                    data.schools.forEach((school: any) => {
+                        school.items.forEach((item: any) => {
+                            const sportName = item.sport || "Unknown Sport";
+                            const itemName = item.item_name || "General Items";
+                            const sportItemKey = `${sportName} - ${itemName}`;
+
+                            // Initialize if not exists
+                            if (!sportItemData[sportItemKey]) {
+                                allSportItemsList.push(sportItemKey);
+                                sportItemData[sportItemKey] = {};
+                                regionsList.forEach(r => {
+                                    sportItemData[sportItemKey][r] = 0;
+                                });
+                            }
+
+                            // Add quantity
+                            sportItemData[sportItemKey][region] += item.quantity || 0;
+                        });
+                    });
+                });
+            });
+        } else {
+            // ✅ If NO sport filter, show ALL sports and items from database (original behavior)
+            if (allSports && allSports.length > 0) {
+                allSports.forEach((sport: any) => {
+                    const sportName = sport.sport_name || "Unknown Sport";
+
+                    if (sport.items && sport.items.length > 0) {
+                        // Sport has specific items
+                        sport.items.forEach((item: any) => {
+                            const itemName = item.item_name || "General Items";
+                            const sportItemKey = `${sportName} - ${itemName}`;
+
+                            if (!allSportItemsList.includes(sportItemKey)) {
+                                allSportItemsList.push(sportItemKey);
+                                sportItemData[sportItemKey] = {};
+                                regionsList.forEach(r => {
+                                    sportItemData[sportItemKey][r] = 0;
+                                });
+                            }
+                        });
+                    } else {
+                        // Sport without specific items - create general entry
+                        const sportItemKey = `${sportName} - General Items`;
+                        if (!allSportItemsList.includes(sportItemKey)) {
+                            allSportItemsList.push(sportItemKey);
+                            sportItemData[sportItemKey] = {};
+                            regionsList.forEach(r => {
+                                sportItemData[sportItemKey][r] = 0;
+                            });
+                        }
+                    }
+                });
+            }
+
+            // Populate actual data from report
+            Object.entries(report).forEach(([region, divisions]: any) => {
+                Object.values(divisions).forEach((data: any) => {
+                    data.schools.forEach((school: any) => {
+                        school.items.forEach((item: any) => {
+                            const sportName = item.sport || "Unknown Sport";
+                            const itemName = item.item_name || "General Items";
+                            const sportItemKey = `${sportName} - ${itemName}`;
+
+                            // Add to existing entry or create new if not in database
+                            if (!sportItemData[sportItemKey]) {
+                                allSportItemsList.push(sportItemKey);
+                                sportItemData[sportItemKey] = {};
+                                regionsList.forEach(r => {
+                                    sportItemData[sportItemKey][r] = 0;
+                                });
+                            }
+
+                            sportItemData[sportItemKey][region] += item.quantity || 0;
+                        });
+                    });
+                });
+            });
+        }
+
+        // Sort the sport-item list
+        allSportItemsList.sort();
+
+        // Setup columns for sport sheet
+        const sportColumns = [
+            { header: "Sport - Item", key: "sportItem", width: 35 }
+        ];
+        regionsList.forEach(region => {
+            sportColumns.push({
+                header: region,
+                key: `region_${region.replace(/\s+/g, '_')}`,
+                width: 15
+            });
+        });
+        sportColumns.push({ header: "Total", key: "total", width: 15 });
+
+        sportSheet.columns = sportColumns;
+
+        // ✅ UPDATED: Add dynamic title row based on filter
+        let titleText = filters.sport
+            ? `SPORT ITEMS DISTRIBUTION BY REGION - ${filters.sport.toUpperCase()}`
+            : 'COMPLETE SPORT ITEMS DISTRIBUTION BY REGION (All Available Items)';
+
+        if (filters.region) titleText += ` - Region: ${filters.region}`;
+        if (filters.division) titleText += ` - Division: ${filters.division}`;
+
+        const titleRow = sportSheet.insertRow(1, [titleText]);
+        titleRow.getCell(1).value = titleText;
+        sportSheet.mergeCells(1, 1, 1, sportColumns.length);
+        titleRow.getCell(1).style = titleStyle;
+        titleRow.height = 25;
+
+        // Add header row
+        const headerRow = sportSheet.addRow(sportColumns.map(col => col.header));
+        headerRow.eachCell((cell) => Object.assign(cell, headerStyle));
+
+        // Add data rows for sport-item combinations
+        allSportItemsList.forEach(sportItem => {
+            const rowData: any = { sportItem };
+            let total = 0;
+
+            regionsList.forEach(region => {
+                const quantity = sportItemData[sportItem] && sportItemData[sportItem][region] ?
+                    sportItemData[sportItem][region] : 0;
+                rowData[`region_${region.replace(/\s+/g, '_')}`] = quantity;
+                total += quantity;
+            });
+
+            rowData.total = total;
+            const row = sportSheet.addRow(rowData);
+            row.eachCell((cell, colNumber) => {
+                Object.assign(cell, dataStyle);
+                if (colNumber > 1) cell.numFmt = '#,##0';   // apply to numeric cols
+            });
+
+            const totalCell = row.getCell(sportColumns.length);
+            totalCell.font = { bold: true };
+            totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFD700' } };
+        });
+
+        // Add totals row at bottom
+        const totalsRowData: any = { sportItem: 'GRAND TOTAL' };
+        let grandTotal = 0;
+
+        regionsList.forEach(region => {
+            const regionTotal = allSportItemsList.reduce((sum, sportItem) => {
+                return sum + (sportItemData[sportItem] && sportItemData[sportItem][region] ?
+                    sportItemData[sportItem][region] : 0);
+            }, 0);
+            totalsRowData[`region_${region.replace(/\s+/g, '_')}`] = regionTotal;
+            grandTotal += regionTotal;
+        });
+        totalsRowData.total = grandTotal;
+
+        const totalsRow = sportSheet.addRow(totalsRowData);
+        totalsRow.eachCell((cell, colNumber) => {
+            Object.assign(cell, titleStyle);
+            if (colNumber > 1) cell.numFmt = '#,##0';
+        });
+
+        // Auto-fit columns
+        [summarySheet, detailSheet, sportSheet].forEach(sheet => {
+            sheet.columns.forEach(column => {
+                if (column.header) {
+                    let maxLength = column.header.length;
+                    column.eachCell?.({ includeEmpty: false }, (cell) => {
+                        const cellLength = cell.value ? cell.value.toString().length : 0;
+                        if (cellLength > maxLength) {
+                            maxLength = cellLength;
+                        }
+                    });
+                    column.width = Math.min(maxLength + 2, 50);
+                }
+            });
+        });
+
+        // ✅ Generate filename based on filters
+        let filename = "sports_report";
+        if (filters.sport) filename += `_${filters.sport.replace(/\s+/g, '_')}`;
+        if (filters.region) filename += `_${filters.region.replace(/\s+/g, '_')}`;
+        if (filters.division) filename += `_${filters.division.replace(/\s+/g, '_')}`;
+        filename += ".xlsx";
+
+        // Save Excel
         const buf = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buf]), "comprehensive_report.xlsx");
+        saveAs(new Blob([buf]), filename);
     };
 
     const toggleExpand = (schoolId: string) => {
@@ -181,8 +406,6 @@ export default function Reports() {
             [schoolId]: !prev[schoolId]
         }));
     };
-
-    console.log(report)
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Reports" />
@@ -212,36 +435,60 @@ export default function Reports() {
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="flex gap-4 mb-6">
-                    <input
-                        type="text"
-                        placeholder="Filter by Region"
-                        value={region}
-                        onChange={(e) => setRegion(e.target.value)}
-                        className="border p-2 rounded"
-                    />
-                    <input
-                        type="text"
-                        placeholder="Filter by Division"
-                        value={division}
-                        onChange={(e) => setDivision(e.target.value)}
-                        className="border p-2 rounded"
-                    />
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                        onClick={() =>
-                            window.location.href = `/reports?region=${region}&division=${division}`
-                        }
-                    >
-                        Apply Filter
-                    </button>
-                    <button
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                        onClick={exportToExcel}
-                    >
-                        Export Excel
-                    </button>
+                {/* Enhanced Filters */}
+                <div className="bg-white p-4 rounded-lg shadow mb-6">
+                    <h3 className="text-md font-semibold mb-4">Filters</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                            <input
+                                type="text"
+                                placeholder="Filter by Region"
+                                value={region}
+                                onChange={(e) => setRegion(e.target.value)}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Division</label>
+                            <input
+                                type="text"
+                                placeholder="Filter by Division"
+                                value={division}
+                                onChange={(e) => setDivision(e.target.value)}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                            <select
+                                value={sport}
+                                onChange={(e) => setSport(e.target.value)}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">All Sports</option>
+                                {allSports && allSports.map((s: any) => (
+                                    <option key={s.id} value={s.sport_name || s.name}>{s.sport_name || s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-end gap-2">
+                            <button
+                                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                                onClick={() =>
+                                    window.location.href = `/reports?region=${region}&division=${division}&sport=${sport}`
+                                }
+                            >
+                                Apply Filter
+                            </button>
+                            <button
+                                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                                onClick={exportToExcel}
+                            >
+                                Export Excel
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Tabs */}
