@@ -94,9 +94,11 @@ class ReportController extends Controller
             // ✅ FIX: Since we pre-filtered at the relationship level, no need to filter again
             $filteredInventories = $school->inventories;
 
-            // ✅ FIX: Calculate quantity and disbursed from the already filtered inventories
+            // ✅ FIX: Calculate quantity from inventories, but disbursed from summary
             $schoolQuantity = $filteredInventories->sum('quantity');
-            $schoolDisbursed = $filteredInventories->sum('disbursed_amount');
+            
+            // ✅ MAIN FIX: Get disbursed amount from the summary, not inventories
+            $schoolDisbursed = $summary?->disbursed_amount ?? 0;
 
             // For PSF, always use the summary since it's not item-specific
             $schoolPsf = $summary?->downloaded_psf_per_sub ?? 0;
@@ -109,7 +111,7 @@ class ReportController extends Controller
                 'school_name' => $school->school_name,
                 'quantity' => $schoolQuantity,
                 'psf' => $schoolPsf,
-                'disbursed' => $schoolDisbursed,
+                'disbursed' => $schoolDisbursed, // ✅ Now using summary disbursed_amount
                 'submitted' => $summary ? true : false,
                 'pdf_url' => $summary?->pdf_url, 
                 'items' => $filteredInventories->map(function ($inv) {
@@ -118,20 +120,21 @@ class ReportController extends Controller
                         'item_name' => $inv->item?->item_name ?? 'General Item',
                         'sport' => $inv->item?->sport?->sport_name ?? $inv->sport?->sport_name ?? 'Unknown Sport',
                         'quantity' => $inv->quantity,
-                        'disbursed' => $inv->disbursed_amount,
+                        // ✅ FIX: Individual item disbursed should come from inventory if needed
+                        'disbursed' => $inv->disbursed_amount ?? 0,
                     ];
                 }),
             ];
 
-            // ✅ FIX: Add to totals using the filtered values
+            // ✅ FIX: Add to totals using the correct disbursed value from summary
             if ($summary) {
                 $data['submitted_schools']++;
                 $data['total_psf'] += $schoolPsf;
+                $data['total_disbursed'] += $schoolDisbursed; // Using summary disbursed_amount
             }
 
-            // Always add quantity and disbursed from filtered inventories
+            // Always add quantity from filtered inventories
             $data['total_quantity'] += $schoolQuantity;
-            $data['total_disbursed'] += $schoolDisbursed;
         }
 
         return Inertia::render('reports', [

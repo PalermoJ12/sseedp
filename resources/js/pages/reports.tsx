@@ -643,7 +643,7 @@ export default function Reports() {
                                                 {data.schools.map((s: any) => {
                                                     const hasSubmission = s.quantity > 0 || s.psf > 0 || s.disbursed > 0;
                                                     const isExpanded = expandedSchools[s.school_id] || false;
-
+                                                    
                                                     return (
                                                         <React.Fragment key={s.school_id}>
                                                             <tr
