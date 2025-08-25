@@ -9,6 +9,7 @@ use App\Models\Sport;
 use App\Models\SportItem;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class InventoryController extends Controller
 {
@@ -48,8 +49,6 @@ class InventoryController extends Controller
         ]);
     }
 
-
-
     public function store(Request $request)
     {
         $request->validate([
@@ -87,7 +86,6 @@ class InventoryController extends Controller
         return redirect()->back()->with('success', 'Inventory updated successfully!');
     }
 
-
     public function update(Request $request, Inventory $inventory)
     {
         $request->validate([
@@ -107,31 +105,110 @@ class InventoryController extends Controller
         return redirect()->back()->with('success', 'Inventory entry deleted!');
     }
 
-
     public function finalize(Request $request)
     {
         $request->validate([
             'downloaded_psf_per_sub' => 'required|numeric|min:0',
             'disbursed_amount' => 'required|numeric|min:0',
+            'pdf_document' => 'nullable|file|mimes:pdf|max:10240', // 10MB max
         ]);
 
         $user = Auth::user();
-
         $totalQuantity = Inventory::where('school_id', $user->school_id)->sum('quantity');
+
+        // Handle PDF file upload
+        $pdfPath = null;
+        if ($request->hasFile('pdf_document')) {
+            // Generate a unique filename
+            $fileName = time() . '_' . $user->school_id . '_' . $request->file('pdf_document')->getClientOriginalName();
+
+            // Store the file in the public disk under inventory-summaries folder
+            $pdfPath = $request->file('pdf_document')->storeAs(
+                'inventory-summaries',
+                $fileName,
+                'public'
+            );
+        }
+
+        // Check if a summary already exists for this school
+        $existingSummary = InventorySummary::where('school_id', $user->school_id)->first();
+
+        // If updating and there's a new PDF, delete the old one
+        if ($existingSummary && $existingSummary->pdf_document && $pdfPath) {
+            Storage::disk('public')->delete($existingSummary->pdf_document);
+        }
+
+        $updateData = [
+            'user_id' => $user->id,
+            'total_quantity' => (int) $totalQuantity,
+            'downloaded_psf_per_sub' => $request->downloaded_psf_per_sub,
+            'disbursed_amount' => $request->disbursed_amount,
+        ];
+
+        // Only update PDF path if a new file was uploaded
+        if ($pdfPath) {
+            $updateData['pdf_document'] = $pdfPath;
+        }
 
         InventorySummary::updateOrCreate(
             [
                 'school_id' => $user->school_id, // condition (if this exists, update it)
             ],
-            [
-                'user_id' => $user->id,
-                'total_quantity' => (int) $totalQuantity,
-                'downloaded_psf_per_sub' => $request->downloaded_psf_per_sub,
-                'disbursed_amount' => $request->disbursed_amount,
-            ]
+            $updateData
         );
 
         return redirect()->back()->with('success', 'Inventory summary finalized successfully!');
     }
 
+    /**
+     * Download the PDF document for a given inventory summary
+     */
+    public function downloadPdf($summaryId)
+    {
+        $user = Auth::user();
+
+        $summary = InventorySummary::where('id', $summaryId)
+            ->where('school_id', $user->school_id)
+            ->first();
+
+        if (!$summary || !$summary->pdf_document) {
+            return redirect()->back()->with('error', 'PDF document not found.');
+        }
+
+        if (!Storage::disk('public')->exists($summary->pdf_document)) {
+            return redirect()->back()->with('error', 'PDF file does not exist.');
+        }
+
+        $path = Storage::disk('public')->path($summary->pdf_document);
+
+        return response()->download(
+            $path,
+            'inventory_summary_' . $summary->school_id . '.pdf'
+        );
+    }
+
+    /**
+     * View the PDF document inline
+     */
+    public function viewPdf($summaryId)
+    {
+        $user = Auth::user();
+
+        $summary = InventorySummary::where('id', $summaryId)
+            ->where('school_id', $user->school_id)
+            ->first();
+
+        if (!$summary || !$summary->pdf_document) {
+            abort(404, 'PDF document not found.');
+        }
+
+        if (!Storage::disk('public')->exists($summary->pdf_document)) {
+            abort(404, 'PDF file does not exist.');
+        }
+
+        return response()->file(storage_path('app/public/' . $summary->pdf_document), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="inventory_summary_' . $summary->school_id . '.pdf"'
+        ]);
+    }
 }

@@ -636,6 +636,7 @@ export default function Reports() {
                                                     <th className="p-2">Quantity</th>
                                                     <th className="p-2">PSF</th>
                                                     <th className="p-2">Disbursed</th>
+                                                    <th className="p-2 text-center">PDF</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -665,6 +666,20 @@ export default function Reports() {
                                                                 <td className="p-2">{s.quantity}</td>
                                                                 <td className="p-2">₱{s.psf.toLocaleString()}</td>
                                                                 <td className="p-2">₱{s.disbursed.toLocaleString()}</td>
+                                                                <td className="p-2 text-center">
+                                                                    {s.pdf_url ? (
+                                                                        <a
+                                                                            href={s.pdf_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-600 hover:underline"
+                                                                        >
+                                                                            View PDF
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">—</span>
+                                                                    )}
+                                                                </td>
                                                             </tr>
 
                                                             {/* Expanded Item List */}

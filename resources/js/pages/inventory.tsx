@@ -4,7 +4,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableCell, TableHead
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash, Edit, Check, Search as SearchIcon} from "lucide-react";
+import { Plus, Trash, Edit, Check, Search as SearchIcon, Upload, Eye, X } from "lucide-react";
 import { Toast } from "@/components/ui/toast";
 import AppLayout from "@/layouts/app-layout";
 import {
@@ -48,6 +48,11 @@ export default function InventoryManagement() {
   const [finalizeModal, setFinalizeModal] = useState(false);
   const [downloadedPsf, setDownloadedPsf] = useState("");
   const [disbursedAmount, setDisbursedAmount] = useState("");
+  
+  // PDF upload states
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   const filteredItems = selectedSportId ? items.filter(i => i.sport_id === selectedSportId) : [];
 
@@ -135,6 +140,29 @@ export default function InventoryManagement() {
     router.get(url, {}, { preserveState: true });
   };
 
+  // PDF handling functions
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+      const url = URL.createObjectURL(file);
+      setPdfPreviewUrl(url);
+    } else {
+      setToastMessage("Please select a valid PDF file.");
+      setToastType("error");
+      setToastOpen(true);
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setPdfFile(null);
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(null);
+    }
+    setShowPdfViewer(false);
+  };
+
   const totalQuantityOnPage = inventory.data.reduce((sum, inv) => sum + inv.quantity, 0);
 
   const handleFinalizeSubmit = () => {
@@ -144,14 +172,36 @@ export default function InventoryManagement() {
       setToastOpen(true);
       return;
     }
-    router.post(route("inventories.finalize"), {
-      downloaded_psf_per_sub: downloadedPsf,
-      disbursed_amount: disbursedAmount
-    }, { preserveState: true });
+
+    // Create FormData to handle file upload
+    const formData = new FormData();
+    formData.append('downloaded_psf_per_sub', downloadedPsf);
+    formData.append('disbursed_amount', disbursedAmount);
+    if (pdfFile) {
+      formData.append('pdf_document', pdfFile);
+    }
+
+    router.post(route("inventories.finalize"), formData, { 
+      preserveState: true,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    
     setFinalizeModal(false);
     setDownloadedPsf("");
     setDisbursedAmount("");
+    handleRemovePdf();
   };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl]);
 
   return (
     <AppLayout breadcrumbs={[{ title: "Inventory", href: "/inventory" }]}>
@@ -313,7 +363,9 @@ export default function InventoryManagement() {
 
         {/* Finalize Button */}
         <div className="flex justify-end mt-6">
-          <Button  disabled={inventory.data.length === 0} onClick={() => setFinalizeModal(true)}>Finalize Inventory</Button>
+          <Button disabled={inventory.data.length === 0} onClick={() => setFinalizeModal(true)}>
+            Finalize Inventory
+          </Button>
         </div>
       </div>
 
@@ -335,12 +387,15 @@ export default function InventoryManagement() {
       {/* Finalize modal */}
       <Modal
         isOpen={finalizeModal}
-        onClose={() => setFinalizeModal(false)}
+        onClose={() => {
+          setFinalizeModal(false);
+          handleRemovePdf();
+        }}
         title="Finalize Inventory Submission"
         onConfirm={handleFinalizeSubmit}
         confirmText="Save Summary"
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Downloaded PSF per Sub</label>
             <input
@@ -352,6 +407,7 @@ export default function InventoryManagement() {
               placeholder="0.00"
             />
           </div>
+          
           <div>
             <label className="block text-sm font-medium mb-1">Disbursed Amount</label>
             <input
@@ -363,11 +419,95 @@ export default function InventoryManagement() {
               placeholder="0.00"
             />
           </div>
+
+          {/* PDF Upload Section */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Upload Supporting Document (PDF)</label>
+            
+            {!pdfFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePdfUpload}
+                  className="hidden"
+                  id="pdf-upload"
+                />
+                <label
+                  htmlFor="pdf-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Upload className="h-8 w-8 text-gray-400" />
+                  <span className="text-sm text-gray-500">
+                    Click to upload PDF document
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    Maximum file size: 10MB
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">PDF</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{pdfFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowPdfViewer(true)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleRemovePdf}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="text-sm opacity-70">
             Note: Total quantity saved equals the sum of all items under your school.
           </div>
         </div>
       </Modal>
+
+      {/* PDF Viewer Modal */}
+      {showPdfViewer && pdfPreviewUrl && (
+        <Modal
+          isOpen={showPdfViewer}
+          onClose={() => setShowPdfViewer(false)}
+          title="PDF Preview"
+          
+        >
+          <div className="w-full h-96">
+            <iframe
+              src={pdfPreviewUrl}
+              className="w-full h-full border rounded"
+              title="PDF Preview"
+            />
+          </div>
+          <div className="mt-4 text-sm text-gray-600 text-center">
+            <p>{pdfFile?.name}</p>
+            <p>File size: {pdfFile ? (pdfFile.size / 1024 / 1024).toFixed(2) : '0'} MB</p>
+          </div>
+        </Modal>
+      )}
 
       <Toast open={toastOpen} message={toastMessage} type={toastType} onOpenChange={setToastOpen} />
     </AppLayout>

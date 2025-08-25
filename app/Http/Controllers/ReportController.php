@@ -21,10 +21,10 @@ class ReportController extends Controller
         $schoolsQuery = School::query()
             ->with([
                 'summaries',
-                'inventories' => function($query) use ($sport) {
+                'inventories' => function ($query) use ($sport) {
                     // ✅ FIX: Pre-filter inventories at the relationship level
                     if ($sport) {
-                        $query->where(function($subQuery) use ($sport) {
+                        $query->where(function ($subQuery) use ($sport) {
                             $subQuery->whereHas('item.sport', function ($sportQ) use ($sport) {
                                 $sportQ->where('sport_name', 'like', "%$sport%");
                             })->orWhereHas('sport', function ($sportQ) use ($sport) {
@@ -57,7 +57,7 @@ class ReportController extends Controller
 
         // Get ALL sports and items from database - ensure items are loaded
         $allSports = Sport::with('items')->orderBy('sport_name')->get();
-        
+
         // Get all distinct regions from database (not just filtered results)
         $allRegions = School::distinct('region')
             ->whereNotNull('region')
@@ -111,6 +111,7 @@ class ReportController extends Controller
                 'psf' => $schoolPsf,
                 'disbursed' => $schoolDisbursed,
                 'submitted' => $summary ? true : false,
+                'pdf_url' => $summary?->pdf_url, 
                 'items' => $filteredInventories->map(function ($inv) {
                     return [
                         'item_id' => $inv->item_id,
@@ -127,7 +128,7 @@ class ReportController extends Controller
                 $data['submitted_schools']++;
                 $data['total_psf'] += $schoolPsf;
             }
-            
+
             // Always add quantity and disbursed from filtered inventories
             $data['total_quantity'] += $schoolQuantity;
             $data['total_disbursed'] += $schoolDisbursed;

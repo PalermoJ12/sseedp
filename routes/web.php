@@ -20,6 +20,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventories.destroy');
     // Finalize submission -> inventory_summaries
     Route::post('/inventories/finalize', [InventoryController::class, 'finalize'])->name('inventories.finalize');
+
+    // Add these new PDF routes
+    Route::get('/inventory-summary/{id}/pdf/download', [InventoryController::class, 'downloadPdf'])->name('inventory.pdf.download');
+    Route::get('/inventory-summary/{id}/pdf/view', [InventoryController::class, 'viewPdf'])->name('inventory.pdf.view');
     // Only admins (role = 1)
     Route::middleware('role:1')->group(function () {
         // Route::get('dashboard', fn() => Inertia::render('dashboard'))
