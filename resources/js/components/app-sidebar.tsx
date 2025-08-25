@@ -2,9 +2,9 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem,  type SharedData } from '@/types';
+import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Folder, LayoutGrid, ListChecks, School, Database } from 'lucide-react';
+import { Folder, LayoutGrid, ListChecks, School, Database, User2Icon } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -33,6 +33,11 @@ const mainNavItems: NavItem[] = [
     href: '/reports',
     icon: Database,
   },
+  {
+    title: 'User',
+    href: '/users',
+    icon: User2Icon,
+  },
 ];
 
 const footerNavItems: NavItem[] = [];
@@ -42,7 +47,7 @@ export function AppSidebar() {
 
   const getNavItems = (role: number | string): NavItem[] => {
     if (role === 0 || role === "0") {
-      return mainNavItems.filter(item => item.title === 'Inventory');
+      return mainNavItems.filter(item => item.title === 'Inventory' || item.title === 'Items');
     }
     return mainNavItems;
   };

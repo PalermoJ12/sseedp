@@ -7,6 +7,7 @@ use App\Http\Controllers\SportItemController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
@@ -21,9 +22,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Finalize submission -> inventory_summaries
     Route::post('/inventories/finalize', [InventoryController::class, 'finalize'])->name('inventories.finalize');
 
-    // Add these new PDF routes
-    Route::get('/inventory-summary/{id}/pdf/download', [InventoryController::class, 'downloadPdf'])->name('inventory.pdf.download');
-    Route::get('/inventory-summary/{id}/pdf/view', [InventoryController::class, 'viewPdf'])->name('inventory.pdf.view');
+
+    // ITEMS CRUD
+    Route::get('items', [SportItemController::class, 'index'])->name('items.index');
+    Route::post('items', [SportItemController::class, 'store'])->name('items.store');
+    Route::put('items/{item}', [SportItemController::class, 'update'])->name('items.update');
+    Route::delete('items/{item}', [SportItemController::class, 'destroy'])->name('items.destroy');
+    
     // Only admins (role = 1)
     Route::middleware('role:1')->group(function () {
         // Route::get('dashboard', fn() => Inertia::render('dashboard'))
@@ -31,11 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('schools', SchoolController::class);
 
-        // ITEMS CRUD
-        Route::get('items', [SportItemController::class, 'index'])->name('items.index');
-        Route::post('items', [SportItemController::class, 'store'])->name('items.store');
-        Route::put('items/{item}', [SportItemController::class, 'update'])->name('items.update');
-        Route::delete('items/{item}', [SportItemController::class, 'destroy'])->name('items.destroy');
+
 
 
         //REPORTS
@@ -43,6 +44,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // routes/web.php
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
+
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::get('/api/schools', [UserController::class, 'getSchools'])->name('api.schools');
+
+        // Add these new PDF routes
+        Route::get('/inventory-summary/{id}/pdf/download', [InventoryController::class, 'downloadPdf'])->name('inventory.pdf.download');
+        Route::get('/inventory-summary/{id}/pdf/view', [InventoryController::class, 'viewPdf'])->name('inventory.pdf.view');
     });
 });
 

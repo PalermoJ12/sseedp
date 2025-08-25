@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Trash, Plus, Search } from "lucide-react"
 import { useState, useEffect } from 'react';
 import { Toast } from "@/components/ui/toast";
+import { type SharedData } from '@/types';
 
 type Sport = {
     id: number;
@@ -55,6 +56,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Items() {
+    const { auth } = usePage<SharedData>().props;
+
     const { items, sports, flash, filters } = usePage<PageProps>().props;
 
     const [modalOpen, setModalOpen] = useState(false);
@@ -220,6 +223,7 @@ export default function Items() {
                                         variant="outline"
                                         className="mr-2 hover:cursor-pointer"
                                         onClick={() => openUpdateModal(item)}
+                                        disabled={Number(auth.user.role) === 0}
                                     >
                                         <Pencil className="h-4 w-4" />
                                     </Button>
@@ -227,6 +231,7 @@ export default function Items() {
                                         size="icon"
                                         variant="outline"
                                         className="hover:cursor-pointer"
+                                        disabled={Number(auth.user.role) === 0}
                                         onClick={() => openDeleteModal(item)}
                                     >
                                         <Trash className="h-4 w-4" />
