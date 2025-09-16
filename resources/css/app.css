@@ -129,6 +129,10 @@
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
 }
+.logo-transparent {
+    mix-blend-mode: multiply;
+    background: transparent;
+}
 
 @layer base {
     * {

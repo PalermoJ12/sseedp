@@ -409,26 +409,26 @@ export default function Reports() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Reports" />
-            <div className="p-6">
+            <div className="p-6 dark:bg-gray-900 dark:text-white">
                 <h1 className="text-xl font-bold mb-4">Comprehensive School Reports</h1>
 
                 {/* Overall Statistics Card */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-lg shadow mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4">Overall Statistics</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white p-4 rounded shadow">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
                             <div className="text-2xl font-bold text-blue-600">{overallStats.totalSchools}</div>
                             <div className="text-sm text-gray-600">Total Schools</div>
                         </div>
-                        <div className="bg-white p-4 rounded shadow">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
                             <div className="text-2xl font-bold text-green-600">{overallStats.totalSubmitted}</div>
                             <div className="text-sm text-gray-600">Submitted</div>
                         </div>
-                        <div className="bg-white p-4 rounded shadow">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
                             <div className="text-2xl font-bold text-orange-600">{overallStats.totalPending}</div>
                             <div className="text-sm text-gray-600">Pending</div>
                         </div>
-                        <div className="bg-white p-4 rounded shadow">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
                             <div className="text-2xl font-bold text-purple-600">{overallStats.completionRate}%</div>
                             <div className="text-sm text-gray-600">Completion Rate</div>
                         </div>
@@ -436,7 +436,7 @@ export default function Reports() {
                 </div>
 
                 {/* Enhanced Filters */}
-                <div className="bg-white p-4 rounded-lg shadow mb-6">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
                     <h3 className="text-md font-semibold mb-4">Filters</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
@@ -446,7 +446,8 @@ export default function Reports() {
                                 placeholder="Filter by Region"
                                 value={region}
                                 onChange={(e) => setRegion(e.target.value)}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
                             />
                         </div>
                         <div>
@@ -456,7 +457,8 @@ export default function Reports() {
                                 placeholder="Filter by Division"
                                 value={division}
                                 onChange={(e) => setDivision(e.target.value)}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
                             />
                         </div>
                         <div>
@@ -464,7 +466,8 @@ export default function Reports() {
                             <select
                                 value={sport}
                                 onChange={(e) => setSport(e.target.value)}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
                             >
                                 <option value="">All Sports</option>
                                 {allSports && allSports.map((s: any) => (
@@ -493,7 +496,7 @@ export default function Reports() {
 
                 {/* Tabs */}
                 <div className="mb-6">
-                    <div className="border-b border-gray-200">
+                   <div className="border-b border-gray-200 dark:border-gray-700">
                         <nav className="-mb-px flex space-x-8">
                             <button
                                 onClick={() => setActiveTab('summary')}
@@ -541,8 +544,8 @@ export default function Reports() {
                             const regionPending = regionSchools - regionSubmitted;
 
                             return (
-                                <div key={region} className="border rounded-lg shadow">
-                                    <div className="bg-gray-50 px-4 py-3 border-b">
+                                <div key={region} className="border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg shadow">
+                                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                                         <div className="flex justify-between items-center">
                                             <h3 className="text-lg font-semibold">{region}</h3>
                                             <div className="flex space-x-4 text-sm">
@@ -570,9 +573,9 @@ export default function Reports() {
                                         </div>
                                     </div>
 
-                                    <div className="p-4">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-gray-100">
+                                    <div className="p-4 overflow-x-auto">
+                                        <table className="w-full border text-sm min-w-full">
+                                            <thead className="bg-gray-100 dark:bg-gray-700">
                                                 <tr>
                                                     <th className="text-left p-2">Division</th>
                                                     <th className="text-center p-2">Total</th>
@@ -588,7 +591,7 @@ export default function Reports() {
                                                     const divisionPending = data.school_count - data.submitted_schools;
 
                                                     return (
-                                                        <tr key={division} className="border-b hover:bg-gray-50">
+                                                        <tr key={division} className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
                                                             <td className="p-2 font-medium">{division}</td>
                                                             <td className="text-center p-2">{data.school_count}</td>
                                                             <td className="text-center p-2 text-green-600">{data.submitted_schools}</td>
@@ -618,16 +621,16 @@ export default function Reports() {
 
                 {/* Detailed View (existing content) */}
                 {activeTab === 'detailed' && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 overflow-x-auto">
                         {Object.entries(report).map(([region, divisions]: any) => (
-                            <div key={region} className="mb-6 border rounded-lg shadow">
-                                <h2 className="text-xl font-bold bg-gray-100 px-4 py-2">{region}</h2>
+                            <div key={region} className="border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+                                <h2 className="text-lg sm:text-xl font-bold bg-gray-100 dark:bg-gray-700 dark:text-white px-2 sm:px-4 py-2">{region}</h2>
                                 {Object.entries(divisions).map(([division, data]: any) => (
                                     <div key={division} className="ml-4 mb-4 p-4 border-t">
                                         {/* Division Header (unchanged) */}
 
-                                        <table className="w-full border text-sm">
-                                            <thead className="bg-gray-200 text-left">
+                                        <table className="w-full border text-sm min-w-full">
+                                            <thead className="dark:border-gray-700 dark:bg-gray-800 text-left text-sm min-w-full">
                                                 <tr>
                                                     <th className="p-2"></th>
                                                     <th className="p-2">School ID</th>
@@ -636,18 +639,18 @@ export default function Reports() {
                                                     <th className="p-2">Quantity</th>
                                                     <th className="p-2">PSF</th>
                                                     <th className="p-2">Disbursed</th>
-                                                    <th className="p-2 text-center">PDF</th>
+                                                    {/* <th className="p-2 text-center">PDF</th> */}
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {data.schools.map((s: any) => {
                                                     const hasSubmission = s.quantity > 0 || s.psf > 0 || s.disbursed > 0;
                                                     const isExpanded = expandedSchools[s.school_id] || false;
-                                                    
+
                                                     return (
                                                         <React.Fragment key={s.school_id}>
                                                             <tr
-                                                                className="border-b hover:bg-gray-50 cursor-pointer"
+                                                                className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                                 onClick={() => toggleExpand(s.school_id)}
                                                             >
                                                                 <td className="p-2 text-gray-500">
@@ -666,7 +669,7 @@ export default function Reports() {
                                                                 <td className="p-2">{s.quantity}</td>
                                                                 <td className="p-2">₱{s.psf.toLocaleString()}</td>
                                                                 <td className="p-2">₱{s.disbursed.toLocaleString()}</td>
-                                                                <td className="p-2 text-center">
+                                                                {/* <td className="p-2 text-center">
                                                                     {s.pdf_url ? (
                                                                         <a
                                                                             href={s.pdf_url}
@@ -679,16 +682,16 @@ export default function Reports() {
                                                                     ) : (
                                                                         <span className="text-gray-400">—</span>
                                                                     )}
-                                                                </td>
+                                                                </td> */}
                                                             </tr>
 
                                                             {/* Expanded Item List */}
                                                             {isExpanded && (
-                                                                <tr className="bg-gray-50">
+                                                                <tr className="bg-gray-50 dark:bg-gray-700">
                                                                     <td colSpan={7} className="p-0"> {/* remove extra padding so child table aligns */}
                                                                         {s.items && s.items.length > 0 ? (
                                                                             <table className="w-full text-xs border-t table-fixed">
-                                                                                <thead className="bg-gray-100">
+                                                                                <thead className="bg-gray-100 dark:bg-gray-700">
                                                                                     <tr>
                                                                                         <th className="p-2 w-1/3 text-left">Item</th>
                                                                                         <th className="p-2 w-1/3 text-left">Sport</th>
@@ -715,7 +718,7 @@ export default function Reports() {
                                                         </React.Fragment>
                                                     );
                                                 })}
-                                                <tr className="font-bold bg-gray-100">
+                                                <tr className="font-bold bg-gray-100 dark:bg-gray-700">
                                                     <td colSpan={4} className="p-2">{division} TOTAL</td>
                                                     <td className="p-2">{data.total_quantity}</td>
                                                     <td className="p-2">₱{data.total_psf.toLocaleString()}</td>

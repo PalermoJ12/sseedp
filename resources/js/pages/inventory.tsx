@@ -421,7 +421,7 @@ export default function InventoryManagement() {
           </div>
 
           {/* PDF Upload Section */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium mb-2">Upload Supporting Document (PDF)</label>
             
             {!pdfFile ? (
@@ -479,7 +479,7 @@ export default function InventoryManagement() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
 
           <div className="text-sm opacity-70">
             Note: Total quantity saved equals the sum of all items under your school.

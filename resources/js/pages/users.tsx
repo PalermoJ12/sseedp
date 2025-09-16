@@ -34,6 +34,10 @@ type School = {
 type Paginated<T> = {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
 };
 
 type PageProps = {
@@ -76,7 +80,13 @@ export default function Users() {
     const [toastOpen, setToastOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState<"success" | "error">("success");
-    const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+    
+    // Get current page from URL params or users object
+    const getCurrentPage = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageFromUrl = urlParams.get('page');
+        return pageFromUrl ? parseInt(pageFromUrl) : users.current_page || 1;
+    };
 
     useEffect(() => {
         if (flash?.success) {
@@ -155,62 +165,94 @@ export default function Users() {
 
     // === CRUD Handlers ===
     const handleCreate = () => {
+        const currentPage = getCurrentPage();
+        const requestData: any = {
+            ...form,
+            page: currentPage,
+        };
+
+        // Add search parameter if it exists
+        if (search) {
+            requestData.search = search;
+        }
+
         router.post(
             route('users.store'),
-            { ...form, page: currentPage },
+            requestData,
             {
                 preserveState: true,
                 onSuccess: () => {
                     setToastMessage("User created successfully!");
                     setToastType("success");
                     setToastOpen(true);
-                    router.reload({ only: ["users"] });
+                    setModalOpen(false);
                 },
-                onError: () => {
-                    setToastMessage("Failed to create user.");
+                onError: (errors) => {
+                    console.log('Validation errors:', errors);
+                    setToastMessage("Failed to create user. Please check the form.");
                     setToastType("error");
                     setToastOpen(true);
                 },
             }
         );
-        setModalOpen(false);
     };
 
     const handleUpdate = () => {
         if (!selectedUser) return;
 
+        const currentPage = getCurrentPage();
+        const requestData: any = {
+            ...form,
+            page: currentPage,
+        };
+
+        // Add search parameter if it exists
+        if (search) {
+            requestData.search = search;
+        }
+
         router.put(
             route('users.update', selectedUser.id),
-            { ...form, page: currentPage },
+            requestData,
             {
                 preserveState: true,
                 onSuccess: () => {
                     setToastMessage("User updated successfully!");
                     setToastType("success");
                     setToastOpen(true);
-                    router.reload({ only: ["users"] });
+                    setModalOpen(false);
                 },
-                onError: (e) => {
-                    console.log(e)
-                    setToastMessage("Failed to update user.");
+                onError: (errors) => {
+                    console.log('Validation errors:', errors);
+                    setToastMessage("Failed to update user. Please check the form.");
                     setToastType("error");
                     setToastOpen(true);
                 },
             }
         );
-        setModalOpen(false);
     };
 
     const handleDelete = () => {
         if (!selectedUser) return;
 
+        const currentPage = getCurrentPage();
+        const requestData: { page: number; search?: string } = {
+            page: currentPage,
+        };
+
+        // Add search parameter if it exists
+        if (search) {
+            requestData.search = search;
+        }
+
         router.delete(route('users.destroy', selectedUser.id), {
+            data: requestData,
             preserveState: true,
             onSuccess: () => {
                 setToastMessage("User deleted successfully!");
                 setToastType("success");
                 setToastOpen(true);
-                router.reload({ only: ["users"] });
+                setModalOpen(false);
             },
             onError: () => {
                 setToastMessage("Failed to delete user.");
@@ -218,12 +260,22 @@ export default function Users() {
                 setToastOpen(true);
             },
         });
-        setModalOpen(false);
     };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route("users.index"), { search }, { preserveState: true, replace: true });
+        const queryParams: { search?: string; page?: number } = {};
+        
+        if (search.trim()) {
+            queryParams.search = search.trim();
+        }
+        // Reset to page 1 when searching
+        queryParams.page = 1;
+
+        router.get(route("users.index"), queryParams, { 
+            preserveState: true, 
+            replace: true 
+        });
     };
 
     const getRoleBadgeColor = (role: number) => {
@@ -303,7 +355,15 @@ export default function Users() {
                         ))}
                     </TableBody>
                 </Table>
-                <Pagination links={users.links} />
+                
+                {/* Show pagination info and pagination component */}
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                        Showing {users.data.length - 1} of {users.total - 1} results
+                        {search && <span> for "{search}"</span>}
+                    </div>
+                    <Pagination links={users.links} />
+                </div>
 
                 <Modal
                     isOpen={modalOpen}

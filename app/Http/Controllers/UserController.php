@@ -17,6 +17,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
+        $page = $request->get('page', 1);
         
         $users = User::query()
             ->when($search, function ($query, $search) {
@@ -29,7 +30,10 @@ class UserController extends Controller
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($user) {
+                return $user;
+            });
 
         return Inertia::render('users', [
             'users' => $users,
@@ -58,7 +62,17 @@ class UserController extends Controller
 
         User::create($validated);
 
-        return redirect()->route('users.index', ['page' => $request->get('page', 1)])
+        // Get current page from request, but ensure we stay on valid page
+        $currentPage = $request->get('page', 1);
+        $queryParams = [];
+        
+        if ($request->has('search') && !empty($request->get('search'))) {
+            $queryParams['search'] = $request->get('search');
+        }
+        
+        $queryParams['page'] = $currentPage;
+
+        return redirect()->route('users.index', $queryParams)
             ->with('flash.success', 'User created successfully!');
     }
 
@@ -87,18 +101,62 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return redirect()->route('users.index', ['page' => $request->get('page', 1)])
+        // Preserve current page and search parameters
+        $currentPage = $request->get('page', 1);
+        $queryParams = [];
+        
+        if ($request->has('search') && !empty($request->get('search'))) {
+            $queryParams['search'] = $request->get('search');
+        }
+        
+        $queryParams['page'] = $currentPage;
+
+        return redirect()->route('users.index', $queryParams)
             ->with('flash.success', 'User updated successfully!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
         $user->delete();
 
-        return redirect()->route('users.index')
+        // After deletion, we need to check if current page is still valid
+        $currentPage = $request->get('page', 1);
+        $search = $request->get('search');
+        
+        // Count remaining users to determine if we need to adjust page
+        $remainingUsersQuery = User::query();
+        if ($search) {
+            $remainingUsersQuery->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('role', 'like', "%{$search}%")
+                ->orWhere('region', 'like', "%{$search}%")
+                ->orWhere('division', 'like', "%{$search}%")
+                ->orWhere('school_name', 'like', "%{$search}%");
+        }
+        
+        $totalUsers = $remainingUsersQuery->count();
+        $perPage = 10;
+        $maxPage = ceil($totalUsers / $perPage);
+        
+        // If current page is higher than max page, go to max page
+        if ($currentPage > $maxPage && $maxPage > 0) {
+            $currentPage = $maxPage;
+        } elseif ($maxPage == 0) {
+            $currentPage = 1;
+        }
+
+        $queryParams = [];
+        if ($search) {
+            $queryParams['search'] = $search;
+        }
+        if ($currentPage > 1) {
+            $queryParams['page'] = $currentPage;
+        }
+
+        return redirect()->route('users.index', $queryParams)
             ->with('flash.success', 'User deleted successfully!');
     }
 
